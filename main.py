@@ -1,9 +1,27 @@
 import shutil
 from textual.app import App, ComposeResult
 from textual.widgets import OptionList, Footer
+from textual.containers import Container
 from textual.binding import Binding
 
 class WarpApp(App):
+    CSS = """
+    Screen {
+        align: center middle;
+    }
+    
+    Container {
+        width: 60;
+        height: auto;
+        border: solid orange;
+        padding: 1;
+    }
+    
+    OptionList {
+        height: auto;
+    }
+    """
+
     BINDINGS = [
         Binding("q", "quit", "Quit")
     ]
@@ -13,12 +31,13 @@ class WarpApp(App):
         self.current_status = "Unknown"
 
     def compose(self) -> ComposeResult:
-        yield OptionList(
-            "Connect",
-            "Disconnect",
-            "Settings",
-            "Exit"
-        )
+        with Container(id="menu-container"):
+            yield OptionList(
+                "Connect",
+                "Disconnect",
+                "Settings",
+                "Exit"
+            )
         yield Footer()
 
     def on_mount(self) -> None:
