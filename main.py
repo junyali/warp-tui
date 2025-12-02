@@ -35,6 +35,18 @@ class WarpApp(App):
         padding: 1;
         margin: 2 8;
     }
+    
+    .status-connected {
+        color: $success;
+    }
+    
+    .status-connecting {
+        color: $warning;
+    }
+    
+    .status-disconnected {
+        color: $error;
+    }
     """
 
     BINDINGS = [
@@ -77,14 +89,21 @@ class WarpApp(App):
                     timeout=5
                 )
 
+                status = None
+                reason = None
+
                 for line in result.stdout.splitlines():
                     if line.startswith("Status update:"):
                         status = line.split("Status update:")[1].strip()
-                        self.current_status = status
-                        self.refresh_status_display()
-                        break
+                    elif line.startswith("Reason:"):
+                        reason = line.split("Reason:")[1].strip()
+                if status:
+                    self.current_status = status
+                    self.status_reason = reason or ""
+                    self.refresh_status_display()
                 else:
                     self.current_status = "Unknown"
+                    self.status_reason = ""
                     self.refresh_status_display()
             except subprocess.TimeoutExpired:
                 self.current_status = "Timeout"
@@ -97,7 +116,20 @@ class WarpApp(App):
 
     def refresh_status_display(self) -> None:
         status_widget = self.query_one("#status-display", Static)
-        status_text = f"Status: {self.current_status}"
+
+        if self.status_reason:
+            status_text = f"Status: {self.current_status} \n{self.status_reason}"
+        else:
+            status_text = f"Status: {self.current_status}"
+
+        status_widget.remove_class("status-connected", "status-connecting", "status-disconnected")
+
+        if self.current_status == "Connected":
+            status_widget.add_class("status-connected")
+        elif self.current_status == "Connecting":
+            status_widget.add_class("status-connecting")
+        elif self.current_status == "Disconnected":
+            status_widget.add_class("status-disconnected")
 
         status_widget.update(status_text)
 
