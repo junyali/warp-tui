@@ -96,6 +96,7 @@ class ModeSettings(ModalScreen):
                 else:
                     new_options.append(f"  {mode}")
 
+            new_options.append(None)
             new_options.append("Back")
 
             if current_options != new_options:
@@ -115,6 +116,7 @@ class ModeSettings(ModalScreen):
                 option_list.clear_options()
                 for _, mode in self.MODE_MAP.items():
                     option_list.add_option(f"  {mode}")
+                option_list.add_option(None)
                 option_list.add_option("Back")
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
