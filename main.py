@@ -330,6 +330,7 @@ class Settings(Screen):
             yield OptionList(
                 "Mode",
                 "Proxy",
+                None,
                 "Back",
                 id="settings-options"
             )
