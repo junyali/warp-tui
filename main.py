@@ -7,6 +7,9 @@ from textual.widgets import OptionList, Footer, Static
 from textual.containers import Container
 from textual.binding import Binding
 
+# TODO: don't hardcode this silly
+polling_rate = 0.5 # seconds
+
 class ModeSettings(ModalScreen):
     CSS = """
     ModeSettings {
@@ -64,7 +67,7 @@ class ModeSettings(ModalScreen):
 
     async def _mode_poll_worker(self) -> None:
         while True:
-            await asyncio.sleep(1)
+            await asyncio.sleep(polling_rate)
             self.refresh_mode_list()
 
     def refresh_mode_list(self) -> None:
@@ -305,7 +308,7 @@ class WarpApp(App):
                 self.current_status = f"Error: {e}"
                 self.refresh_status_display()
 
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(polling_rate)
 
     def refresh_status_display(self) -> None:
         try:
