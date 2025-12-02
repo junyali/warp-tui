@@ -198,7 +198,7 @@ class PortInput(ModalScreen):
             except Exception as e:
                 pass
 
-        self.app.pop_screen()
+        self.dismiss()
 
 class ProxySettings(ModalScreen):
     CSS = """
@@ -237,10 +237,51 @@ class ProxySettings(ModalScreen):
             yield Static("Proxy Settings", id="proxy-title")
             yield OptionList(
                 "Port",
+                None,
                 "Back",
                 id="proxy-options"
             )
         yield Footer()
+
+    def on_mount(self) -> None:
+        self.refresh_proxy_settings()
+
+    def refresh_proxy_settings(self) -> None:
+        try:
+            result = subprocess.run(
+                ["warp-cli", "settings", "list"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+
+            for line in result.stdout.splitlines():
+                if "Mode:" in line and "WarpProxy" in line:
+                    parts = line.split("port")
+                    if len(parts) > 1:
+                        self.current_port = parts[1].strip()
+                    break
+                elif "Mode:" in line:
+                    self.current_port = ""
+                    break
+
+            option_list = self.query_one("#proxy-options", OptionList)
+            option_list.clear_options()
+
+            if self.current_port:
+                option_list.add_option(f"Port (current: {self.current_port})")
+            else:
+                option_list.add_option("Port")
+
+            option_list.add_option(None)
+            option_list.add_option("Back")
+
+        except Exception as e:
+            option_list = self.query_one("#proxy-options", OptionList)
+            option_list.clear_options()
+            option_list.add_option("Port")
+            option_list.add_option(None)
+            option_list.add_option("Back")
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         option = str(event.option.prompt).strip()
@@ -248,8 +289,11 @@ class ProxySettings(ModalScreen):
         if option == "Back":
             self.app.pop_screen()
             return
-        elif option == "Port":
-            self.app.push_screen(PortInput())
+        elif option.startswith("Port"):
+            self.app.push_screen(PortInput(), callback=self._on_port_input_closed)
+
+    def _on_port_input_closed(self, result=None) -> None:
+        self.refresh_proxy_settings()
 
 class Settings(Screen):
     CSS = """
