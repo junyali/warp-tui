@@ -103,6 +103,7 @@ class WarpApp(App):
     def __init__(self):
         super().__init__()
         self.current_status = "Unknown"
+        self.status_reason = ""
 
     def compose(self) -> ComposeResult:
         yield Static("Warp-TUI", id="title")
