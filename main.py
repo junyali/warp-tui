@@ -13,6 +13,12 @@ class WarpApp(App):
         margin: 2 8;
     }
     
+    #title {
+        text-align: center;
+        text-style: bold;
+        color: orange;
+    }
+    
     Container {
         height: auto;
         border: solid orange;
@@ -40,6 +46,7 @@ class WarpApp(App):
         self.current_status = "Unknown"
 
     def compose(self) -> ComposeResult:
+        yield Static("Warp-TUI", id="title")
         with Container(id="menu-container"):
             yield OptionList(
                 "Connect",
