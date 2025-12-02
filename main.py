@@ -45,8 +45,6 @@ class ModeSettings(ModalScreen):
         "TunnelOnly": "tunnel_only",
     }
 
-    REVERSE_MODE_MAP = {v: k for k, v in MODE_MAP.items()}
-
     def __init__(self):
         super().__init__()
         self.current_mode = None
@@ -92,8 +90,8 @@ class ModeSettings(ModalScreen):
             current_options = [str(opt.prompt) for opt in option_list.options]
             new_options = []
 
-            for key, mode in self.MODE_MAP.items():
-                if key == self.current_mode:
+            for _, mode in self.MODE_MAP.items():
+                if mode == self.current_mode:
                     new_options.append(f"* {mode}")
                 else:
                     new_options.append(f"  {mode}")
