@@ -100,6 +100,7 @@ class WarpApp(App):
                 if status:
                     self.current_status = status
                     self.status_reason = reason or ""
+                    self.update_menu_options()
                     self.refresh_status_display()
                 else:
                     self.current_status = "Unknown"
@@ -133,8 +134,29 @@ class WarpApp(App):
 
         status_widget.update(status_text)
 
+    def update_menu_options(self) -> None:
+        option_list = self.query_one(OptionList)
+
+        if self.current_status in ["Connected", "Connecting"]:
+            new_options = ["Disconnect", "Settings", "Exit"]
+        else:
+            new_options = ["Connect", "Settings", "Exit"]
+
+        current_options = [str(option.prompt) for option in option_list.options]
+
+        if current_options!= new_options:
+            current_index = option_list.highlighted
+            option_list.clear_options()
+            for option in new_options:
+                option_list.add_option(option)
+
+            if current_index is not None:
+                max_index = len(new_options) - 1
+                restored_index = min(current_index, max_index)
+                option_list.highlighted = restored_index
+
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
-        option = event.option.prompt
+        option = str(event.option.prompt)
 
         if option == "Exit":
             self.exit()
