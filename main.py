@@ -15,16 +15,14 @@ class ModeSettings(ModalScreen):
     
     #mode-dialogue {
         height: auto;
-        background: $surface;
         border: solid orange;
-        padding: 2 12;
+        padding: 1;
     }
     
     #mode-title {
         text-align: center;
         text-style: bold;
         color: orange;
-        margin-bottom: 1;
     }
     
     #mode-options {
@@ -83,7 +81,11 @@ class ModeSettings(ModalScreen):
             for line in result.stdout.splitlines():
                 if "Mode:" in line:
                     mode_text = line.split("Mode:")[1].strip()
-                    self.current_mode = self.MODE_MAP.get(mode_text)
+
+                    if mode_text.startswith("WarpProxy"):
+                        self.current_mode = self.MODE_MAP.get("WarpProxy")
+                    else:
+                        self.current_mode = self.MODE_MAP.get(mode_text)
                     break
 
             option_list = self.query_one("#mode-options", OptionList)
