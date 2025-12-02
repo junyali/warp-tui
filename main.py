@@ -235,7 +235,11 @@ class ProxySettings(ModalScreen):
     def compose(self) -> ComposeResult:
         with Container(id="proxy-dialogue"):
             yield Static("Proxy Settings", id="proxy-title")
-            yield OptionList(id="proxy-options")
+            yield OptionList(
+                "Port",
+                "Back",
+                id="proxy-options"
+            )
         yield Footer()
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
