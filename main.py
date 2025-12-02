@@ -2,9 +2,55 @@ import shutil
 import subprocess
 import asyncio
 from textual.app import App, ComposeResult
+from textual.screen import Screen
 from textual.widgets import OptionList, Footer, Static
 from textual.containers import Container
 from textual.binding import Binding
+
+class Settings(Screen):
+    CSS = """
+    SettingsScreen {
+        align: center middle;
+    }
+    
+    #settings-title {
+        text-align: center;
+        text-style: bold;
+        color: orange;
+    }
+    
+    #settings-container {
+        height: auto;
+        border: solid orange;
+        padding: 1;
+        margin: 2 8;
+    }
+    
+    OptionList {
+        height: auto;
+    }
+    """
+
+    BINDINGS = [
+        Binding("escape", "app.pop_screen", "Back"),
+        Binding("q", "quit", "Quit")
+    ]
+
+    def compose(self) -> ComposeResult:
+        yield Static("Settings", id="settings-title")
+        with Container(id="settings-container"):
+            yield OptionList(
+                "example 1",
+                "example 2",
+                "Back"
+            )
+        yield Footer()
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        option = str(event.option.prompt)
+
+        if option == "Back":
+            self.app.pop_screen()
 
 class WarpApp(App):
     CSS = """
@@ -116,7 +162,10 @@ class WarpApp(App):
             await asyncio.sleep(0.5)
 
     def refresh_status_display(self) -> None:
-        status_widget = self.query_one("#status-display", Static)
+        try:
+            status_widget = self.query_one("#status-display", Static)
+        except:
+            return
 
         if self.status_reason:
             status_text = f"Status: {self.current_status} \n{self.status_reason}"
@@ -135,7 +184,10 @@ class WarpApp(App):
         status_widget.update(status_text)
 
     def update_menu_options(self) -> None:
-        option_list = self.query_one(OptionList)
+        try:
+            option_list = self.query_one(OptionList)
+        except:
+            return
 
         if self.current_status in ["Connected", "Connecting"]:
             new_options = ["Disconnect", "Settings", "Exit"]
@@ -164,6 +216,8 @@ class WarpApp(App):
             self.run_worker(self._connect_worker)
         elif option == "Disconnect":
             self.run_worker(self._disconnect_worker)
+        elif option == "Settings":
+            self.push_screen(Settings())
 
     async def _connect_worker(self) -> None:
         try:
