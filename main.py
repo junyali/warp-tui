@@ -517,6 +517,32 @@ class WarpApp(App):
 
     async def _connect_worker(self) -> None:
         try:
+            reg_result = subprocess.run(
+                ["warp-cli", "registration", "show"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+            if reg_result.stdout.startswith("Error: Missing registration"):
+                self.current_status = "Registering device..."
+                self.refresh_status_display()
+
+                register_result = subprocess.run(
+                    ["warp-cli", "registration", "new"],
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+
+                if register_result.returncode != 0:
+                    self.current_status = "Registration failed"
+                    self.status_reason = register_result.stderr.strip() if register_result.stderr else "Unknown error"
+                    self.refresh_status_display()
+                    return
+
+                await asyncio.sleep(1)
+
             subprocess.run(
                 ["warp-cli", "connect"],
                 capture_output=True,
@@ -536,7 +562,8 @@ class WarpApp(App):
                 timeout=10
             )
         except Exception as e:
-            self.current_status = f"Disconnect failed: {e}"
+            self.current_status = f"Disconnect failed"
+            self.status_reason = str(e)
             self.refresh_status_display()
 
 if __name__ == "__main__":
