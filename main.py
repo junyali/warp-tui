@@ -413,7 +413,7 @@ class WarpApp(App):
 
     def on_mount(self) -> None:
         if not shutil.which("warp-cli"):
-            self.exit(message="Error: warp-cli is not installed")
+            self.exit(message="Error: warp-cli is not installed\nFor more information, visit https://developers.cloudflare.com/warp-client/get-started/linux/")
             return
         self.call_after_refresh(self.refresh_status_display)
         self.poll_status()
