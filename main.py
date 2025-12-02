@@ -2,7 +2,7 @@ import shutil
 import subprocess
 import asyncio
 from textual.app import App, ComposeResult
-from textual.widgets import OptionList, Footer
+from textual.widgets import OptionList, Footer, Static
 from textual.containers import Container
 from textual.binding import Binding
 
@@ -10,17 +10,24 @@ class WarpApp(App):
     CSS = """
     Screen {
         align: center middle;
+        margin: 2 8;
     }
     
     Container {
-        width: 60;
         height: auto;
         border: solid orange;
         padding: 1;
+        margin: 2 8;
     }
     
     OptionList {
         height: auto;
+    }
+    
+    #status-display {
+        border: solid gray;
+        padding: 1;
+        margin: 2 8;
     }
     """
 
@@ -40,12 +47,14 @@ class WarpApp(App):
                 "Settings",
                 "Exit"
             )
+        yield Static("Status: Initialising", id="status-display")
         yield Footer()
 
     def on_mount(self) -> None:
         if not shutil.which("warp-cli"):
             self.exit(message="Error: warp-cli is not installed")
             return
+        self.call_after_refresh(self.refresh_status_display)
         self.poll_status()
 
     def poll_status(self) -> None:
@@ -80,8 +89,10 @@ class WarpApp(App):
             await asyncio.sleep(0.5)
 
     def refresh_status_display(self) -> None:
-        footer = self.query_one(Footer)
-        self.sub_title = f"Status: {self.current_status}"
+        status_widget = self.query_one("#status-display", Static)
+        status_text = f"Status: {self.current_status}"
+
+        status_widget.update(status_text)
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         option = event.option.prompt
