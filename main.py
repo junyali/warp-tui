@@ -9,6 +9,7 @@ from textual.binding import Binding
 
 # TODO: don't hardcode this silly
 polling_rate = 0.5 # seconds
+version = "1.0.0"
 
 class ModeSettings(ModalScreen):
     CSS = """
@@ -387,6 +388,11 @@ class WarpApp(App):
     .status-disconnected {
         color: $error;
     }
+    
+    #version-display {
+        text-align: center;
+        color: gray;
+    }
     """
 
     BINDINGS = [
@@ -409,6 +415,7 @@ class WarpApp(App):
                 id="menu-options"
             )
         yield Static("Status: Initialising", id="status-display")
+        yield Static(f"v{version}", id="version-display")
         yield Footer()
 
     def on_mount(self) -> None:
