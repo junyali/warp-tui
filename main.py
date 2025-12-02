@@ -26,7 +26,7 @@ class Settings(Screen):
         margin: 2 8;
     }
     
-    OptionList {
+    #settings-options {
         height: auto;
     }
     """
@@ -42,7 +42,8 @@ class Settings(Screen):
             yield OptionList(
                 "example 1",
                 "example 2",
-                "Back"
+                "Back",
+                id="settings-options"
             )
         yield Footer()
 
@@ -72,7 +73,7 @@ class WarpApp(App):
         margin: 2 8;
     }
     
-    OptionList {
+    #menu-options {
         height: auto;
     }
     
@@ -110,7 +111,8 @@ class WarpApp(App):
                 "Connect",
                 "Disconnect",
                 "Settings",
-                "Exit"
+                "Exit",
+                id="menu-options"
             )
         yield Static("Status: Initialising", id="status-display")
         yield Footer()
@@ -185,7 +187,7 @@ class WarpApp(App):
 
     def update_menu_options(self) -> None:
         try:
-            option_list = self.query_one(OptionList)
+            option_list = self.query_one("menu-options", OptionList)
         except:
             return
 
