@@ -185,7 +185,7 @@ class PortInput(ModalScreen):
             yield Static("Press Enter to confirm, Escape to cancel")
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
-        port = event.input.text.strip()
+        port = event.value.strip()
 
         if port.isdigit() and 1 <= int(port) <= 65535:
             try:
