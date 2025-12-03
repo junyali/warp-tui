@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "warp-tui"
+version = "1.1.0"
+authors = [
+    { name = "junyali", email = "junyali@pm.me" }
+]
+description = "A TUI for warp-cli"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: POSIX :: Linux",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: System :: Networking"
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+dependencies = [
+    "textual>=6.7.0"
+]
+
+[project.urls]
+Repository = "https://github.com/junyali/warp-tui"
+Issues = "https://github.com/junyali/warp-tui/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]

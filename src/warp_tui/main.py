@@ -574,6 +574,9 @@ class WarpApp(App):
             self.status_reason = str(e)
             self.refresh_status_display()
 
-if __name__ == "__main__":
+def main():
     app = WarpApp()
     app.run()
+
+if __name__ == "__main__":
+    main()
