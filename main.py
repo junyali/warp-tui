@@ -7,9 +7,10 @@ from textual.widgets import OptionList, Footer, Static, Input
 from textual.containers import Container
 from textual.binding import Binding
 
+from __version__ import __version__
+
 # TODO: don't hardcode this silly
 polling_rate = 0.5 # seconds
-version = "1.0.0"
 
 class ModeSettings(ModalScreen):
     CSS = """
@@ -415,7 +416,7 @@ class WarpApp(App):
                 id="menu-options"
             )
         yield Static("Status: Initialising", id="status-display")
-        yield Static(f"v{version}", id="version-display")
+        yield Static(f"v{__version__}", id="version-display")
         yield Footer()
 
     def on_mount(self) -> None:
