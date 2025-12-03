@@ -116,7 +116,7 @@ class ModeSettings(ModalScreen):
                     option_list.highlighted = restored_index
 
         except Exception as e:
-            option_list = self.query_one("mode-options", OptionList)
+            option_list = self.query_one("#mode-options", OptionList)
             if len(option_list.options) == 0:
                 option_list.clear_options()
                 for _, mode in self.MODE_MAP.items():
