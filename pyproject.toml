@@ -29,6 +29,9 @@ dependencies = [
     "textual>=6.7.0"
 ]
 
+[project.scripts]
+warp-tui = "warp_tui.main:main"
+
 [project.urls]
 Repository = "https://github.com/junyali/warp-tui"
 Issues = "https://github.com/junyali/warp-tui/issues"
