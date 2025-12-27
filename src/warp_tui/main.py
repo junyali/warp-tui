@@ -7,7 +7,7 @@ from textual.widgets import OptionList, Footer, Static, Input
 from textual.containers import Container
 from textual.binding import Binding
 
-from __version__ import __version__
+from .__version__ import __version__
 
 # TODO: don't hardcode this silly
 polling_rate = 0.5 # seconds
