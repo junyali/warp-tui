@@ -4,6 +4,7 @@ from textual.app import App, ComposeResult
 from textual.widgets import OptionList, Footer, Static
 from textual.containers import Container
 from textual.binding import Binding
+from textual.theme import Theme
 
 from .__version__ import __version__
 from .utils import polling_rate, State, WarpCLI
@@ -66,6 +67,18 @@ class WarpApp(App):
         self.current_status = State.UNKNOWN.value
         self.status_reason = ""
         self.is_closed = False
+
+        self.register_theme(Theme(
+            name="warp_tui",
+            primary = "#f48120",
+            secondary = "#faad3f",
+            accent = "#ffa62b",
+            warning = "#ffa62b",
+            error = "#ba3c5b",
+            success = "#4ebf71",
+            foreground = "#e0e0e0",
+        ))
+        self.theme = "warp_tui"
 
     def compose(self) -> ComposeResult:
         yield Static("Warp-TUI", id="title")
