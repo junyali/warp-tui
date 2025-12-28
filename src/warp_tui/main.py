@@ -1,5 +1,6 @@
 import shutil
 import asyncio
+import webbrowser
 from textual.app import App, ComposeResult
 from textual.widgets import OptionList, Footer, Static
 from textual.containers import Container
@@ -92,7 +93,10 @@ class WarpApp(App):
                 id="menu-options"
             )
         yield Static("Status: Initialising", id="status-display")
-        yield Static(f"v{__version__}", id="version-display")
+        yield Static(
+            f"v{__version__} | [@click=app.open_github]https://github.com/junyali/warp-tui[/]",
+            id="version-display"
+        )
         yield Footer()
 
     def on_mount(self) -> None:
@@ -165,6 +169,9 @@ class WarpApp(App):
                 max_index = len(new_options) - 1
                 restored_index = min(current_index, max_index)
                 option_list.highlighted = restored_index
+
+    def action_open_github(self) -> None:
+        webbrowser.open("https://github.com/junyali/warp-tui")
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         option = str(event.option.prompt)
