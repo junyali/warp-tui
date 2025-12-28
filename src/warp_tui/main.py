@@ -7,7 +7,7 @@ from textual.binding import Binding
 
 from .__version__ import __version__
 from .utils import polling_rate, State, WarpCLI
-from .screens import Settings
+from .screens import Settings, Registration
 
 class WarpApp(App):
     CSS = """
@@ -74,6 +74,7 @@ class WarpApp(App):
                 "Connect",
                 "Disconnect",
                 "Settings",
+                "Registration",
                 "Exit",
                 id="menu-options"
             )
@@ -135,9 +136,9 @@ class WarpApp(App):
             return
 
         if self.current_status in ["Connected", "Connecting"]:
-            new_options = ["Disconnect", "Settings", "Exit"]
+            new_options = ["Disconnect", "Settings", "Registration", "Exit"]
         else:
-            new_options = ["Connect", "Settings", "Exit"]
+            new_options = ["Connect", "Settings", "Registration", "Exit"]
 
         current_options = [str(option.prompt) for option in option_list.options]
 
@@ -163,6 +164,8 @@ class WarpApp(App):
             self.run_worker(self._disconnect_worker)
         elif option == "Settings":
             self.push_screen(Settings())
+        elif option == "Registration":
+            self.push_screen(Registration())
 
     async def _connect_worker(self) -> None:
         result = WarpCLI.connect()
