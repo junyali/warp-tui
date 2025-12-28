@@ -4,6 +4,8 @@ from textual.widgets import OptionList, Footer, Static
 from textual.containers import Container
 from textual.binding import Binding
 
+from .screen_registration import ShowRegistration
+
 class Registration(Screen):
     CSS = """
     Registration {
@@ -53,7 +55,7 @@ class Registration(Screen):
         if option == "Back":
             self.app.pop_screen()
         elif option == "Show":
-            pass
+            self.app.push_screen(ShowRegistration())
         elif option == "New":
             pass
         elif option == "Devices":
