@@ -5,7 +5,7 @@ from textual.containers import Container
 from textual.binding import Binding
 from textual.app import ComposeResult
 
-from ..utils import polling_rate, WarpCLI
+from ...utils import polling_rate, WarpCLI
 
 class ModeSettings(ModalScreen):
     CSS = """
@@ -31,8 +31,7 @@ class ModeSettings(ModalScreen):
     """
 
     BINDINGS = [
-        Binding("escape", "app.pop_screen", "Back"),
-        Binding("q", "quit", "Quit")
+        Binding("escape", "app.pop_screen", "Back")
     ]
 
     MODE_MAP = {
