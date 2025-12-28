@@ -145,17 +145,29 @@ class DeleteRegistration(ModalScreen):
 
     def on_mount(self) -> None:
         if not WarpCLI.check_registration():
-            self.app.push_screen(
-                DeleteResult(False, "Not registered."),
-                callback=lambda _: self.dismiss()
-            )
+            self.call_after_refresh(self._show_not_registered)
         else:
-            self.app.push_screen(
-                DeleteConfirmation(),
-                callback=self._handle_confirmation
-            )
+            self.call_after_refresh(self._show_confirmation)
+
+    def _show_not_registered(self) -> None:
+        def on_close(result):
+            self.dismiss()
+
+        self.app.push_screen(
+            DeleteResult(False, "Not registered."),
+            callback=on_close
+        )
+
+    def _show_confirmation(self) -> None:
+        self.app.push_screen(
+            DeleteConfirmation(),
+            callback=self._handle_confirmation
+        )
 
     def _handle_confirmation(self, confirmed: bool) -> None:
+        def on_result_close(result):
+            self.dismiss()
+
         if not confirmed:
             self.dismiss()
             return
@@ -165,12 +177,12 @@ class DeleteRegistration(ModalScreen):
         if success:
             self.app.push_screen(
                 DeleteResult(True, "Registration deleted."),
-                callback=lambda _: self.dismiss()
+                callback=on_result_close
             )
         else:
             self.app.push_screen(
                 DeleteResult(False, f"{error_msg}"),
-                callback=lambda _: self.dismiss()
+                callback=on_result_close
             )
 
     def compose(self) -> ComposeResult:
