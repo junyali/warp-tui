@@ -1,12 +1,11 @@
 import asyncio
-import subprocess
 from textual.screen import ModalScreen
 from textual.widgets import OptionList, Footer, Static
 from textual.containers import Container
 from textual.binding import Binding
 from textual.app import ComposeResult
 
-from ..utils import polling_rate
+from ..utils import polling_rate, WarpCLI
 
 class ModeSettings(ModalScreen):
     CSS = """
@@ -46,6 +45,16 @@ class ModeSettings(ModalScreen):
         "TunnelOnly": "tunnel_only",
     }
 
+    MODES = [
+        "warp",
+        "doh",
+        "warp+doh",
+        "dot", "dot",
+        "warp+dot",
+        "proxy",
+        "tunnel_only",
+    ]
+
     def __init__(self):
         super().__init__()
         self.current_mode = None
@@ -64,34 +73,20 @@ class ModeSettings(ModalScreen):
         self.run_worker(self._mode_poll_worker, exclusive=True)
 
     async def _mode_poll_worker(self) -> None:
-        while True:
+        while self.is_mounted:
             await asyncio.sleep(polling_rate)
-            self.refresh_mode_list()
+            if self.is_mounted:
+                self.refresh_mode_list()
 
     def refresh_mode_list(self) -> None:
+        self.current_mode = WarpCLI.get_mode()
+
         try:
-            result = subprocess.run(
-                ["warp-cli", "settings", "list"],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-
-            for line in result.stdout.splitlines():
-                if "Mode:" in line:
-                    mode_text = line.split("Mode:")[1].strip()
-
-                    if mode_text.startswith("WarpProxy"):
-                        self.current_mode = self.MODE_MAP.get("WarpProxy")
-                    else:
-                        self.current_mode = self.MODE_MAP.get(mode_text)
-                    break
-
             option_list = self.query_one("#mode-options", OptionList)
             current_options = [str(opt.prompt) for opt in option_list.options]
             new_options = []
 
-            for _, mode in self.MODE_MAP.items():
+            for mode in self.MODES:
                 if mode == self.current_mode:
                     new_options.append(f"* {mode}")
                 else:
@@ -115,7 +110,7 @@ class ModeSettings(ModalScreen):
             option_list = self.query_one("#mode-options", OptionList)
             if len(option_list.options) == 0:
                 option_list.clear_options()
-                for _, mode in self.MODE_MAP.items():
+                for mode in self.MODES:
                     option_list.add_option(f"  {mode}")
                 option_list.add_option(None)
                 option_list.add_option("Back")
@@ -130,7 +125,7 @@ class ModeSettings(ModalScreen):
         option_clean = option.lstrip("* ")
 
         selected_mode = None
-        for _, mode in self.MODE_MAP.items():
+        for mode in self.MODES:
             if option_clean == mode:
                 selected_mode = mode
                 break
@@ -139,12 +134,7 @@ class ModeSettings(ModalScreen):
             self.run_worker(self._change_mode_worker(selected_mode))
 
     async def _change_mode_worker(self, mode: str) -> None:
-        try:
-            subprocess.run(
-                ["warp-cli", "mode", mode],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-        except Exception as e:
-            pass
+        result = WarpCLI.set_mode(mode)
+        if result != 0:
+            await asyncio.sleep(0.5)
+            self.refresh_mode_list()

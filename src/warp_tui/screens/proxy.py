@@ -5,6 +5,8 @@ from textual.containers import Container
 from textual.binding import Binding
 from textual.app import ComposeResult
 
+from ..utils import WarpCLI
+
 class PortInput(ModalScreen):
     CSS = """
         PortInput {
@@ -42,17 +44,10 @@ class PortInput(ModalScreen):
         port = event.value.strip()
 
         if port.isdigit() and 1 <= int(port) <= 65535:
-            try:
-                subprocess.run(
-                    ["warp-cli", "proxy", "port", port],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
-                )
-            except Exception as e:
-                pass
-
-        self.dismiss()
+            result = WarpCLI.set_proxy_port(str(port))
+            self.dismiss(result)
+        else:
+            pass
 
 class ProxySettings(ModalScreen):
     CSS = """
@@ -101,24 +96,9 @@ class ProxySettings(ModalScreen):
         self.refresh_proxy_settings()
 
     def refresh_proxy_settings(self) -> None:
+        self.current_port = WarpCLI.get_proxy_port() or ""
+
         try:
-            result = subprocess.run(
-                ["warp-cli", "settings", "list"],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-
-            for line in result.stdout.splitlines():
-                if "Mode:" in line and "WarpProxy" in line:
-                    parts = line.split("port")
-                    if len(parts) > 1:
-                        self.current_port = parts[1].strip()
-                    break
-                elif "Mode:" in line:
-                    self.current_port = ""
-                    break
-
             option_list = self.query_one("#proxy-options", OptionList)
             option_list.clear_options()
 
@@ -129,7 +109,6 @@ class ProxySettings(ModalScreen):
 
             option_list.add_option(None)
             option_list.add_option("Back")
-
         except Exception as e:
             option_list = self.query_one("#proxy-options", OptionList)
             option_list.clear_options()

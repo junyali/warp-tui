@@ -1,14 +1,13 @@
 import shutil
-import subprocess
 import asyncio
 from textual.app import App, ComposeResult
-from textual.screen import Screen, ModalScreen
-from textual.widgets import OptionList, Footer, Static, Input
+from textual.screen import Screen
+from textual.widgets import OptionList, Footer, Static
 from textual.containers import Container
 from textual.binding import Binding
 
 from .__version__ import __version__
-from .utils import polling_rate
+from .utils import polling_rate, State, WarpCLI
 from .screens import ModeSettings, ProxySettings
 
 class Settings(Screen):
@@ -116,8 +115,9 @@ class WarpApp(App):
 
     def __init__(self):
         super().__init__()
-        self.current_status = "Unknown"
+        self.current_status = State.UNKNOWN.value
         self.status_reason = ""
+        self.is_closed = False
 
     def compose(self) -> ComposeResult:
         yield Static("Warp-TUI", id="title")
@@ -140,41 +140,20 @@ class WarpApp(App):
         self.call_after_refresh(self.refresh_status_display)
         self.poll_status()
 
+    def on_unmount(self) -> None:
+        self.is_closed = True
+
     def poll_status(self) -> None:
         self.run_worker(self._status_worker, exclusive=True)
 
     async def _status_worker(self) -> None:
-        while True:
-            try:
-                result = subprocess.run(
-                    ["warp-cli", "status"],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
+        while not self.is_closed:
+            status, reason = WarpCLI.get_status()
 
-                status = None
-                reason = None
-
-                for line in result.stdout.splitlines():
-                    if line.startswith("Status update:"):
-                        status = line.split("Status update:")[1].strip()
-                    elif line.startswith("Reason:"):
-                        reason = line.split("Reason:")[1].strip()
-                if status:
-                    self.current_status = status
-                    self.status_reason = reason or ""
-                    self.update_menu_options()
-                    self.refresh_status_display()
-                else:
-                    self.current_status = "Unknown"
-                    self.status_reason = ""
-                    self.refresh_status_display()
-            except subprocess.TimeoutExpired:
-                self.current_status = "Timeout"
-                self.refresh_status_display()
-            except Exception as e:
-                self.current_status = f"Error: {e}"
+            if status:
+                self.current_status = status
+                self.status_reason = reason or ""
+                self.update_menu_options()
                 self.refresh_status_display()
 
             await asyncio.sleep(polling_rate)
@@ -238,54 +217,17 @@ class WarpApp(App):
             self.push_screen(Settings())
 
     async def _connect_worker(self) -> None:
-        try:
-            reg_result = subprocess.run(
-                ["warp-cli", "registration", "show"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-
-            if reg_result.stdout.startswith("Error: Missing registration"):
-                self.current_status = "Registering device..."
-                self.refresh_status_display()
-
-                register_result = subprocess.run(
-                    ["warp-cli", "registration", "new"],
-                    capture_output=True,
-                    text=True,
-                    timeout=30
-                )
-
-                if register_result.returncode != 0:
-                    self.current_status = "Registration failed"
-                    self.status_reason = register_result.stderr.strip() if register_result.stderr else "Unknown error"
-                    self.refresh_status_display()
-                    return
-
-                await asyncio.sleep(1)
-
-            subprocess.run(
-                ["warp-cli", "connect"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-        except Exception as e:
-            self.current_status = f"Connection failed: {e}"
+        result = WarpCLI.connect()
+        if result != 0:
+            self.current_status = "Connection failed"
+            self.status_reason = "Failed to connect"
             self.refresh_status_display()
 
     async def _disconnect_worker(self) -> None:
-        try:
-            subprocess.run(
-                ["warp-cli", "disconnect"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-        except Exception as e:
+        result = WarpCLI.disconnect()
+        if result != 0:
             self.current_status = f"Disconnect failed"
-            self.status_reason = str(e)
+            self.status_reason = "Failed to disconnect"
             self.refresh_status_display()
 
 def main():
