@@ -137,3 +137,70 @@ class WarpCLI:
             return result.returncode
         except Exception as e:
             return str(e)
+
+    @staticmethod
+    def check_registration():
+        try:
+            result = subprocess.run(
+                ["warp-cli", "registration", "show"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            return not result.stdout.startswith("Error: Missing registration")
+        except Exception:
+            return False
+
+    @staticmethod
+    def get_registration_info():
+        try:
+            result = subprocess.run(
+                ["warp-cli", "registration", "show"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            return result.stdout.strip(), result.returcode == 0
+        except Exception as e:
+            return f"Error: {str(e)}", False
+
+    @staticmethod
+    def register_new():
+        try:
+            result = subprocess.run(
+                ["warp-cli", "registration", "new"],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+            return result.returncode == 0, error_msg
+        except Exception as e:
+            return False, str(e)
+
+    @staticmethod
+    def delete_registration():
+        try:
+            result = subprocess.run(
+                ["warp-cli", "registration", "delete"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+            return result.returncode == 0, error_msg
+        except Exception as e:
+            return False, str(e)
+
+    @staticmethod
+    def get_devices():
+        try:
+            result = subprocess.run(
+                ["warp-cli", "registration", "devices"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            return result.stdout.strip(), result.returncode == 0
+        except Exception as e:
+            return f"Error: {str(e)}", False
