@@ -160,7 +160,7 @@ class WarpCLI:
                 text=True,
                 timeout=10
             )
-            return result.stdout.strip(), result.returcode == 0
+            return result.stdout.strip(), result.returncode == 0
         except Exception as e:
             return f"Error: {str(e)}", False
 
