@@ -4,7 +4,7 @@ from textual.widgets import OptionList, Footer, Static
 from textual.containers import Container
 from textual.binding import Binding
 
-from .screen_registration import ShowRegistration
+from .screen_registration import ShowRegistration, DeleteRegistration
 
 class Registration(Screen):
     CSS = """
@@ -61,4 +61,4 @@ class Registration(Screen):
         elif option == "Devices":
             pass
         elif option == "Delete":
-            pass
+            self.app.push_screen(DeleteRegistration())
