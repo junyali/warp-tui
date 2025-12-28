@@ -13,7 +13,7 @@ class ShowRegistration(ModalScreen):
     }
 
     #info-dialogue {
-        width: 60%;
+        width: 80%;
         height: auto;
         border: solid orange;
         padding: 1;
