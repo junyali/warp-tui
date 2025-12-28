@@ -147,7 +147,8 @@ class WarpCLI:
                 text=True,
                 timeout=10
             )
-            return not result.stdout.startswith("Error: Missing registration")
+            output = result.stdout + result.stderr
+            return not ("Missing registration" in output or "Missing registration" in output)
         except Exception:
             return False
 
@@ -160,7 +161,11 @@ class WarpCLI:
                 text=True,
                 timeout=10
             )
-            return result.stdout.strip(), result.returncode == 0
+            output = result.stdout.strip()
+            if not output and result.stderr:
+                output = result.stderr.strip()
+
+            return output, result.returncode == 0
         except Exception as e:
             return f"Error: {str(e)}", False
 
