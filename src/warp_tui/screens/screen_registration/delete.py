@@ -45,8 +45,11 @@ class DeleteConfirmation(ModalScreen):
 
     BINDINGS = [
         Binding("escape", "cancel", "Cancel"),
+        Binding("left", "focus_no", "Previous", show=False),
+        Binding("right", "focus_yes", "Next", show=False),
         Binding("n", "cancel", "No"),
-        Binding("y", "confirm", "Yes")
+        Binding("y", "confirm", "Yes"),
+        Binding("enter", "select", "Select")
     ]
 
     def compose(self) -> ComposeResult:
@@ -57,14 +60,29 @@ class DeleteConfirmation(ModalScreen):
                 id="confirm-content"
             )
             with Horizontal(id="button-container"):
-                yield Button("Yes", variant="error", id="yes-button")
                 yield Button("No", variant="primary", id="no-button")
+                yield Button("Yes", variant="error", id="yes-button")
+
+    def on_mount(self) -> None:
+        self.query_one("#no-button", Button).focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "yes-button":
             self.dismiss(True)
         else:
             self.dismiss(False)
+
+    def action_confirm(self) -> None:
+        self.dismiss(True)
+
+    def action_cancel(self) -> None:
+        self.dismiss(False)
+
+    def action_focus_yes(self) -> None:
+        self.query_one("#yes-button", Button).focus()
+
+    def action_focus_no(self) -> None:
+        self.query_one("#no-button", Button).focus()
 
 class DeleteResult(ModalScreen):
     CSS = """
