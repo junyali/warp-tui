@@ -206,6 +206,10 @@ class WarpCLI:
                 text=True,
                 timeout=10
             )
-            return result.stdout.strip(), result.returncode == 0
+            output = result.stdout.strip()
+            if not output and result.stderr:
+                output = result.stderr.strip()
+
+            return output, result.returncode == 0
         except Exception as e:
             return f"Error: {str(e)}", False
