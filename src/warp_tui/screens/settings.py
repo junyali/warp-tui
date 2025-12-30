@@ -4,7 +4,7 @@ from textual.widgets import OptionList, Footer, Static
 from textual.containers import Container
 from textual.binding import Binding
 
-from .screen_settings import ModeSettings, ProxySettings
+from .screen_settings import ModeSettings, ProxySettings, TunnelSettings
 
 class Settings(Screen):
     CSS = """
@@ -41,6 +41,7 @@ class Settings(Screen):
             yield OptionList(
                 "Mode",
                 "Proxy",
+                "Tunnel",
                 None,
                 "Back",
                 id="settings-options"
@@ -56,3 +57,5 @@ class Settings(Screen):
             self.app.push_screen(ModeSettings())
         elif option == "Proxy":
             self.app.push_screen(ProxySettings())
+        elif option == "Tunnel":
+            self.app.push_screen(TunnelSettings())
