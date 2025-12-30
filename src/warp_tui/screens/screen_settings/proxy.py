@@ -96,6 +96,8 @@ class ProxySettings(ModalScreen):
 
     def on_mount(self) -> None:
         self.refresh_proxy_settings()
+        option_list = self.query_one("#proxy-options", OptionList)
+        option_list.highlighted = 0
 
     def refresh_proxy_settings(self) -> None:
         self.current_port = WarpCLI.get_proxy_port() or ""
