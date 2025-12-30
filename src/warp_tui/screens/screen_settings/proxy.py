@@ -15,13 +15,15 @@ class PortInput(ModalScreen):
         #port-dialogue {
             height: auto;
             border: solid orange;
-            padding: 2;
+            padding: 1;
+            margin: 2 8;
         }
 
         #port-input-title {
             text-align: center;
             text-style: bold;
             color: orange;
+            margin-bottom: 1;
         }
 
         Input {
@@ -58,12 +60,14 @@ class ProxySettings(ModalScreen):
             height: auto;
             border: solid orange;
             padding: 1;
+            margin: 2 8;
         }
 
         #proxy-title {
             text-align: center;
             text-style: bold;
             color: orange;
+            margin-bottom: 1;
         }
 
         #proxy-options {

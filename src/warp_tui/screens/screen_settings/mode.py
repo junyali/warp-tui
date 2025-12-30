@@ -17,12 +17,14 @@ class ModeSettings(ModalScreen):
         height: auto;
         border: solid orange;
         padding: 1;
+        margin: 2 8;
     }
 
     #mode-title {
         text-align: center;
         text-style: bold;
         color: orange;
+        margin-bottom: 1;
     }
 
     #mode-options {
