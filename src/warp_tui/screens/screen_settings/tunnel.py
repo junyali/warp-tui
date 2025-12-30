@@ -6,6 +6,214 @@ from textual.app import ComposeResult
 
 from ...utils import WarpCLI
 
+
+class MasqueSelect(ModalScreen):
+    CSS = """
+    MasqueSelect {
+        align: center middle;
+    }
+
+    #protocol-dialogue {
+        height: auto;
+        border: solid orange;
+        padding: 1;
+        margin: 2 8;
+    }
+
+    #protocol-title {
+        text-align: center;
+        text-style: bold;
+        color: orange;
+        margin-bottom: 1;
+    }
+
+    #protocol-options {
+        height: auto;
+    }
+    """
+
+    BINDINGS = [
+        Binding("escape", "app.pop_screen", "Cancel"),
+    ]
+
+    def compose(self) -> ComposeResult:
+        with Container(id="protocol-dialogue"):
+            yield Static("Select Protocol", id="protocol-input-title")
+            yield OptionList(
+                "h3-only",
+                "h2-only",
+                "h3-with-h2-fallback",
+                None,
+                "Back",
+                id="protocol-options"
+            )
+        yield Footer()
+
+    def on_mount(self) -> None:
+        option_list = self.query_one("#protocol-options", OptionList)
+        option_list.highlighted = 0
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        option = str(event.option.prompt).strip()
+
+        if option == "Back":
+            self.dismiss()
+        elif option in ["h3-only", "h2-only", "h3-with-h2-fallback"]:
+            success, error_msg = WarpCLI.set_masque(option)
+            self.dismiss((success, error_msg))
+
+
+class ResetMasque(ModalScreen):
+    CSS = """
+        ResetMasque {
+            align: center middle;
+        }
+
+        #info-dialogue {
+            width: 80%;
+            height: auto;
+            border: solid orange;
+            padding: 1;
+            margin: 2 8;
+        }
+
+        #info-title {
+            text-align: center;
+            text-style: bold;
+            color: orange;
+            margin-bottom: 1;
+        }
+
+        #info-content {
+            height: auto;
+            padding: 1;
+            margin-bottom: 1;
+        }
+
+        #info-scroll {
+            height: auto;
+            max-height: 60vh;
+        }
+
+        #info-button {
+            width: 100%;
+            margin-top: 1;
+        }
+        """
+
+    BINDINGS = [
+        Binding("escape", "dismiss", "Close"),
+        Binding("enter", "dismiss", "Close")
+    ]
+
+    def compose(self) -> ComposeResult:
+        success, error_msg = WarpCLI.reset_masque()
+
+        with Vertical(id="info-dialogue"):
+            yield Static("Reset MASQUE", id="info-title")
+            with VerticalScroll(id="info-scroll"):
+                if success:
+                    yield Static("Success!", id="info-content")
+                else:
+                    yield Static(f"{error_msg}", id="info-content")
+            yield Button("OK", variant="primary", id="info-button")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        self.dismiss()
+
+
+class MasqueTunnel(ModalScreen):
+    CSS = """
+    MasqueTunnel {
+        align: center middle;
+    }
+
+    #masque-dialogue {
+        height: auto;
+        border: solid orange;
+        padding: 1;
+        margin: 2 8;
+    }
+
+    #masque-title {
+        text-align: center;
+        text-style: bold;
+        color: orange;
+        margin-bottom: 1;
+    }
+
+    #masque-options {
+        height: auto;
+    }
+    """
+
+    BINDINGS = [
+        Binding("escape", "app.pop_screen", "Back")
+    ]
+
+    def __init__(self):
+        super().__init__()
+        self.current_masque = None
+
+    def compose(self) -> ComposeResult:
+        with Container(id="masque-dialogue"):
+            yield Static("MASQUE Settings", id="masque-title")
+            yield OptionList(id="masque-options")
+        yield Footer()
+
+    def on_mount(self) -> None:
+        self.refresh_masque_settings()
+        option_list = self.query_one("#masque-options", OptionList)
+        option_list.highlighted = 0
+
+    def refresh_masque_settings(self) -> None:
+        try:
+            option_list = self.query_one("#masque-options", OptionList)
+            option_list.clear_options()
+
+            stats, success = WarpCLI.get_stats()
+            masque_display = "Not connected"
+
+            if success:
+                for line in stats.splitlines():
+                    if line.startswith("Tunnel Protocol: "):
+                        protocol_info = line.split("Tunnel Protocol:")[1].strip()
+                        if "MASQUE" in protocol_info:
+                            if "(" in protocol_info and ")" in protocol_info:
+                                masque_option = protocol_info.split("(")[1].split(")")[0].strip()
+                                masque_display = masque_option
+                            else:
+                                masque_display = "default"
+                        else:
+                            masque_display = "N/A"
+                        break
+
+            option_list.add_option(f"Set (current: {masque_display})")
+            option_list.add_option("Reset")
+            option_list.add_option(None)
+            option_list.add_option("Back")
+        except Exception as e:
+            option_list = self.query_one("#masque-options", OptionList)
+            option_list.clear_options()
+            option_list.add_option("Set")
+            option_list.add_option("Reset")
+            option_list.add_option(None)
+            option_list.add_option("Back")
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        option = str(event.option.prompt).strip()
+
+        if option == "Back":
+            self.app.pop_screen()
+        elif option.startswith("Set"):
+            self.app.push_screen(MasqueSelect(), callback=self._on_masque_select_closed)
+        elif option == "Reset":
+            self.app.push_screen(ResetMasque())
+            self.refresh_masque_settings()
+
+    def _on_masque_select_closed(self, result=None) -> None:
+        self.refresh_masque_settings()
+
 class ProtocolSelect(ModalScreen):
     CSS = """
     ProtocolSelect {
@@ -621,3 +829,5 @@ class TunnelSettings(ModalScreen):
             self.app.push_screen(EndpointTunnel())
         elif option == "Protocol":
             self.app.push_screen(ProtocolTunnel())
+        elif option == "Masque Options":
+            self.app.push_screen(MasqueTunnel())

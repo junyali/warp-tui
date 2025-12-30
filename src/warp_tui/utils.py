@@ -351,3 +351,38 @@ class WarpCLI:
             return result.returncode == 0, output
         except Exception as e:
             return False, str(e)
+
+    @staticmethod
+    def set_masque(protocol: str):
+        try:
+            if protocol not in ["h3-only", "h2-only", "h3-with-h2-fallback"]:
+                return False, "Invalid MASQUE protocol"
+
+            result = subprocess.run(
+                ["warp-cli", "tunnel", "masque-options", "set", protocol],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            output = result.stdout.strip()
+            if not output and result.stderr:
+                output = result.stderr.strip()
+            return result.returncode == 0, output
+        except Exception as e:
+            return False, str(e)
+
+    @staticmethod
+    def reset_masque():
+        try:
+            result = subprocess.run(
+                ["warp-cli", "tunnel", "masque-options", "reset"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            output = result.stdout.strip()
+            if not output and result.stderr:
+                output = result.stderr.strip()
+            return result.returncode == 0, output
+        except Exception as e:
+            return False, str(e)
