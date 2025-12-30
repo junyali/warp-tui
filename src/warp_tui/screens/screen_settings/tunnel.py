@@ -328,7 +328,7 @@ class ResetProtocol(ModalScreen):
 
 class ProtocolTunnel(ModalScreen):
     CSS = """
-    SetProtocolTunnel {
+    ProtocolTunnel {
             align: center middle;
         }
 
