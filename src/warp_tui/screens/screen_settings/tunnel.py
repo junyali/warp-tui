@@ -6,6 +6,202 @@ from textual.app import ComposeResult
 
 from ...utils import WarpCLI
 
+class ProtocolSelect(ModalScreen):
+    CSS = """
+    ProtocolSelect {
+        align: center middle;
+    }
+
+    #protocol-dialogue {
+        height: auto;
+        border: solid orange;
+        padding: 1;
+        margin: 2 8;
+    }
+    
+    #protocol-title {
+        text-align: center;
+        text-style: bold;
+        color: orange;
+        margin-bottom: 1;
+    }
+
+    #protocol-options {
+        height: auto;
+    }
+    """
+
+    BINDINGS = [
+        Binding("escape", "app.pop_screen", "Cancel"),
+    ]
+
+    def compose(self) -> ComposeResult:
+        with Container(id="protocol-dialogue"):
+            yield Static("Select Protocol", id="protocol-input-title")
+            yield OptionList(
+                "MASQUE",
+                "WireGuard",
+                None,
+                "Back",
+                id="protocol-options"
+            )
+        yield Footer()
+
+    def on_mount(self) -> None:
+        option_list = self.query_one("#protocol-options", OptionList)
+        option_list.highlighted = 0
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        option = str(event.option.prompt).strip()
+
+        if option == "Back":
+            self.dismiss()
+        elif option in ["MASQUE", "WireGuard"]:
+            success, error_msg = WarpCLI.set_protocol(option)
+            self.dismiss((success, error_msg))
+
+class ResetProtocol(ModalScreen):
+    CSS = """
+        ResetProtocol {
+            align: center middle;
+        }
+
+        #info-dialogue {
+            width: 80%;
+            height: auto;
+            border: solid orange;
+            padding: 1;
+            margin: 2 8;
+        }
+
+        #info-title {
+            text-align: center;
+            text-style: bold;
+            color: orange;
+            margin-bottom: 1;
+        }
+
+        #info-content {
+            height: auto;
+            padding: 1;
+            margin-bottom: 1;
+        }
+
+        #info-scroll {
+            height: auto;
+            max-height: 60vh;
+        }
+
+        #info-button {
+            width: 100%;
+            margin-top: 1;
+        }
+        """
+
+    BINDINGS = [
+        Binding("escape", "dismiss", "Close"),
+        Binding("enter", "dismiss", "Close")
+    ]
+
+    def compose(self) -> ComposeResult:
+        success, error_msg = WarpCLI.reset_protocol()
+
+        with Vertical(id="info-dialogue"):
+            yield Static("Reset Protocol", id="info-title")
+            with VerticalScroll(id="info-scroll"):
+                if success:
+                    yield Static("Success!", id="info-content")
+                else:
+                    yield Static(f"{error_msg}", id="info-content")
+            yield Button("OK", variant="primary", id="info-button")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        self.dismiss()
+
+class ProtocolTunnel(ModalScreen):
+    CSS = """
+    SetProtocolTunnel {
+            align: center middle;
+        }
+
+        #protocol-dialogue {
+            height: auto;
+            border: solid orange;
+            padding: 1;
+            margin: 2 8;
+        }
+
+        #protocol-title {
+            text-align: center;
+            text-style: bold;
+            color: orange;
+            margin-bottom: 1;
+        }
+
+        #protocol-options {
+            height: auto;
+        }
+    """
+
+    BINDINGS = [
+        Binding("escape", "app.pop_screen", "Back")
+    ]
+
+    def __init__(self):
+        super().__init__()
+        self.current_protocol = None
+
+    def compose(self) -> ComposeResult:
+        with Container(id="protocol-dialogue"):
+            yield Static("Protocol Settings", id="protocol-title")
+            yield OptionList(id="protocol-options")
+        yield Footer()
+
+    def on_mount(self) -> None:
+        self.refresh_protocol_settings()
+        option_list = self.query_one("#protocol-options", OptionList)
+        option_list.highlighted = 0
+
+    def refresh_protocol_settings(self) -> None:
+        try:
+            option_list = self.query_one("#protocol-options", OptionList)
+            option_list.clear_options()
+
+            stats, success = WarpCLI.get_stats()
+            protocol_display = "Not connected"
+
+            if success:
+                for line in stats.splitlines():
+                    if line.startswith("Tunnel Protocol: "):
+                        protocol_display = line.split("Tunnel Protocol:")[1].strip()
+                        break
+
+            option_list.add_option(f"Set (current: {protocol_display})")
+            option_list.add_option("Reset")
+            option_list.add_option(None)
+            option_list.add_option("Back")
+        except Exception as e:
+            option_list = self.query_one("#protocol-options", OptionList)
+            option_list.clear_options()
+            option_list.add_option("Set")
+            option_list.add_option("Reset")
+            option_list.add_option(None)
+            option_list.add_option("Back")
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        option = str(event.option.prompt).strip()
+
+        if option == "Back":
+            self.app.pop_screen()
+        elif option.startswith("Set"):
+            self.app.push_screen(ProtocolSelect(), callback=self._on_protocol_select_closed)
+        elif option == "Reset":
+            self.app.push_screen(ResetProtocol())
+            self.refresh_protocol_settings()
+
+    def _on_protocol_select_closed(self, result=None) -> None:
+        self.refresh_protocol_settings()
+
 class EndpointInput(ModalScreen):
     CSS = """
         EndpointInput {
@@ -423,3 +619,5 @@ class TunnelSettings(ModalScreen):
             self.app.push_screen(RotateKeysTunnel())
         elif option == "Endpoint":
             self.app.push_screen(EndpointTunnel())
+        elif option == "Protocol":
+            self.app.push_screen(ProtocolTunnel())
