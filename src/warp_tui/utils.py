@@ -213,3 +213,54 @@ class WarpCLI:
             return output, result.returncode == 0
         except Exception as e:
             return f"Error: {str(e)}", False
+
+    @staticmethod
+    def dump_tunnel():
+        try:
+            result = subprocess.run(
+                ["warp-cli", "tunnel", "dump"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            output = result.stdout.strip()
+            if not output and result.stderr:
+                output = result.stderr.strip()
+
+            return output, result.returncode == 0
+        except Exception as e:
+            return f"Error: {str(e)}", False
+
+    @staticmethod
+    def get_stats():
+        try:
+            result = subprocess.run(
+                ["warp-cli", "tunnel", "stats"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            output = result.stdout.strip()
+            if not output and result.stderr:
+                output = result.stderr.strip()
+
+            if "not connected" in output:
+                return output, False
+            else:
+                return output, result.returncode == 0
+        except Exception as e:
+            return f"Error: {str(e)}", False
+
+    @staticmethod
+    def rotate_keys():
+        try:
+            result = subprocess.run(
+                ["warp-cli", "tunnel", "rotate-keys"],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+            return result.returncode == 0, error_msg
+        except Exception as e:
+            return False, str(e)
