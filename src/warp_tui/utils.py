@@ -264,3 +264,55 @@ class WarpCLI:
             return result.returncode == 0, error_msg
         except Exception as e:
             return False, str(e)
+
+    @staticmethod
+    def set_endpoint(sockaddr: str):
+        try:
+            if ":" not in sockaddr:
+                return False, "Invalid socket address syntax"
+
+            parts = sockaddr.split(":")
+            if len(parts) != 2:
+                return False, "Invalid socket address syntax"
+
+            ip, port = parts
+
+            if not port.isdigit():
+                return False, "Invalid socket address syntax"
+
+            port_num = int(port)
+            if not (1 <= port_num <= 65535):
+                return False, "Invalid socket address syntax"
+
+            ip = ip.strip()
+            if not ip:
+                return False, "Invalid socket address syntax"
+
+            result = subprocess.run(
+                ["warp-cli", "tunnel", "endpoint", "set", sockaddr],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            output = result.stdout.strip()
+            if not output and result.stderr:
+                output = result.stderr.strip()
+            return result.returncode == 0, output
+        except Exception as e:
+            return False, str(e)
+
+    @staticmethod
+    def reset_endpoint():
+        try:
+            result = subprocess.run(
+                ["warp-cli", "tunnel", "endpoint", "reset"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            output = result.stdout.strip()
+            if not output and result.stderr:
+                output = result.stderr.strip()
+            return result.returncode == 0, output
+        except Exception as e:
+            return False, str(e)
