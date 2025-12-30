@@ -316,3 +316,38 @@ class WarpCLI:
             return result.returncode == 0, output
         except Exception as e:
             return False, str(e)
+
+    @staticmethod
+    def set_protocol(protocol: str):
+        try:
+            if protocol not in ["MASQUE", "WireGuard"]:
+                return False, "Invalid protocol"
+
+            result = subprocess.run(
+                ["warp-cli", "tunnel", "protocol", "set", protocol],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            output = result.stdout.strip()
+            if not output and result.stderr:
+                output = result.stderr.strip()
+            return result.returncode == 0, output
+        except Exception as e:
+            return False, str(e)
+
+    @staticmethod
+    def reset_protocol():
+        try:
+            result = subprocess.run(
+                ["warp-cli", "tunnel", "protocol", "reset"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            output = result.stdout.strip()
+            if not output and result.stderr:
+                output = result.stderr.strip()
+            return result.returncode == 0, output
+        except Exception as e:
+            return False, str(e)
