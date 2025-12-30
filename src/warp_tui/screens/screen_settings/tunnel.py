@@ -381,7 +381,11 @@ class ProtocolTunnel(ModalScreen):
             if success:
                 for line in stats.splitlines():
                     if line.startswith("Tunnel Protocol: "):
-                        protocol_display = line.split("Tunnel Protocol:")[1].strip()
+                        protocol_info = line.split("Tunnel Protocol:")[1].strip()
+                        if "(" in protocol_info:
+                            protocol_display = protocol_info.split("(")[0].strip()
+                        else:
+                            protocol_display = protocol_info
                         break
 
             option_list.add_option(f"Set (current: {protocol_display})")
