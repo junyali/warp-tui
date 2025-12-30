@@ -1,6 +1,6 @@
 from textual.screen import ModalScreen
 from textual.widgets import Static, Button
-from textual.containers import Vertical
+from textual.containers import Vertical, VerticalScroll
 from textual.binding import Binding
 from textual.app import ComposeResult
 
@@ -33,6 +33,11 @@ class DevicesRegistration(ModalScreen):
         margin-bottom: 1;
     }
     
+    #info-scroll {
+        height: auto;
+        max-height: 60vh;
+    }
+    
     #info-button {
         width: 100%;
         margin-top: 1;
@@ -49,10 +54,11 @@ class DevicesRegistration(ModalScreen):
 
         with Vertical(id="info-dialogue"):
             yield Static("Registration Devices", id="info-title")
-            if success:
-                yield Static(devices, id="info-content")
-            else:
-                yield Static(f"{devices}", id="info-content")
+            with VerticalScroll(id="info-scroll"):
+                if success:
+                    yield Static(devices, id="info-content")
+                else:
+                    yield Static(f"{devices}", id="info-content")
             yield Button("OK", variant="primary", id="info-button")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
