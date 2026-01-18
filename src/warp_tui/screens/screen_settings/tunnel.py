@@ -41,13 +41,27 @@ class HostInput(ModalScreen):
             yield Input(placeholder="example.com", id="host-input")
             yield Static("Press Enter to confirm, Escape to cancel")
 
+    def _is_valid_hostname(self, host: str) -> bool:
+        if not host or len(host) > 253:
+            return False
+        if host.startswith('.') or host.endswith('.'):
+            return False
+        allowed = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-*')
+        return all(c in allowed for c in host)
+
     def on_input_submitted(self, event: Input.Submitted) -> None:
         host = event.value.strip()
-        if host:
+        if not host:
+            self.dismiss((False, "Host cannot be empty"))
+            return
+        if not self._is_valid_hostname(host):
+            self.dismiss((False, "Invalid hostname format"))
+            return
+        try:
             success, error_msg = WarpCLI.add_tunnel_host(host)
             self.dismiss((success, error_msg))
-        else:
-            self.dismiss((False, "Host cannot be empty"))
+        except Exception as e:
+            self.dismiss((False, f"Error: {str(e)}"))
 
 class ConfirmReset(ModalScreen):
     CSS = """
@@ -200,8 +214,12 @@ class HostTunnel(ModalScreen):
             output, success = WarpCLI.list_tunnel_host()
             if success:
                 lines = output.splitlines()
-                if lines:
-                    hosts = [line.split()[0].strip() for line in lines[1:] if line.strip()]
+                if len(lines) > 1:
+                    hosts = []
+                    for line in lines[1:]:
+                        parts = line.split()
+                        if parts:
+                            hosts.append(parts[0].strip())
                     if hosts:
                         for host in hosts:
                             host_list.add_option(host)
@@ -229,9 +247,15 @@ class HostTunnel(ModalScreen):
             actions_list.border_title = "Actions"
             host_list.border_title = None
 
+    def _is_placeholder(self, text: str) -> bool:
+        return text in ("(No hosts excluded)",) or text.startswith("Error:")
+
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         option = str(event.option.prompt).strip()
-        if event.option_list.id == "host-actions":
+        if event.option_list.id == "host-list":
+            if self._is_placeholder(option):
+                return
+        elif event.option_list.id == "host-actions":
             if option == "Back":
                 self.app.pop_screen()
             elif option == "Add":
@@ -250,7 +274,7 @@ class HostTunnel(ModalScreen):
             selected_option = host_list.get_option_at_index(host_list.highlighted)
             if selected_option and selected_option.prompt:
                 host = str(selected_option.prompt).strip()
-                if host and host != "(No hosts excluded)" and not host.startswith("Error:"):
+                if host and not self._is_placeholder(host):
                     success, error_msg = WarpCLI.remove_tunnel_host(host)
                     self.refresh_host_list()
 
