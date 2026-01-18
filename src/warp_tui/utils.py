@@ -456,3 +456,73 @@ class WarpCLI:
             return result.returncode == 0, output
         except Exception as e:
             return False, str(e)
+
+    @staticmethod
+    def list_tunnel_ip():
+        try:
+            result = subprocess.run(
+                ["warp-cli", "tunnel", "ip", "list"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            output = result.stdout.strip()
+            if not output and result.stderr:
+                output = result.stderr.strip()
+            return output, result.returncode == 0
+        except Exception as e:
+            return f"Error: {str(e)}", False
+
+    @staticmethod
+    def add_tunnel_ip(ip: str):
+        try:
+            if not ip or not ip.strip():
+                return False, "Invalid"
+
+            result = subprocess.run(
+                ["warp-cli", "tunnel", "ip", "add", ip],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            output = result.stdout.strip()
+            if not output and result.stderr:
+                output = result.stderr.strip()
+            return result.returncode == 0, output
+        except Exception as e:
+            return False, str(e)
+
+    @staticmethod
+    def remove_tunnel_ip(ip: str):
+        try:
+            if not ip or not ip.strip():
+                return False, "Invalid"
+
+            result = subprocess.run(
+                ["warp-cli", "tunnel", "ip", "remove", ip],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            output = result.stdout.strip()
+            if not output and result.stderr:
+                output = result.stderr.strip()
+            return result.returncode == 0, output
+        except Exception as e:
+            return False, str(e)
+
+    @staticmethod
+    def reset_tunnel_ip():
+        try:
+            result = subprocess.run(
+                ["warp-cli", "tunnel", "ip", "reset"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            output = result.stdout.strip()
+            if not output and result.stderr:
+                output = result.stderr.strip()
+            return result.returncode == 0, output
+        except Exception as e:
+            return False, str(e)
