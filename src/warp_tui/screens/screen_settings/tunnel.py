@@ -6,6 +6,265 @@ from textual.app import ComposeResult
 
 from ...utils import WarpCLI
 
+class HostInput(ModalScreen):
+    CSS = """
+    HostInput {
+        align: center middle;
+    }
+    
+    #host-dialogue {
+        height: auto;
+        border: solid orange;
+        padding: 1;
+        margin: 2 8;
+    }
+
+    #host-input-title {
+        text-align: center;
+        text-style: bold;
+        color: orange;
+        margin-bottom: 1;
+    }
+
+    Input {
+        height: auto;
+    }
+    """
+
+    BINDINGS = [
+        Binding("escape", "app.pop_screen", "Cancel")
+    ]
+
+    def compose(self) -> ComposeResult:
+        with Container(id="host-dialogue"):
+            yield Static("Enter Hostname", id="host-input-title")
+            yield Input(placeholder="example.com", id="host-input")
+            yield Static("Press Enter to confirm, Escape to cancel")
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        host = event.value.strip()
+        if host:
+            success, error_msg = WarpCLI.add_tunnel_host(host)
+            self.dismiss((success, error_msg))
+        else:
+            self.dismiss((False, "Host cannot be empty"))
+
+class ConfirmReset(ModalScreen):
+    CSS = """
+    ConfirmReset {
+        align: center middle;
+    }
+    
+    #confirm-dialogue {
+        width: 60%;
+        height: auto;
+        border: solid orange;
+        padding: 1;
+        margin: 2 8;
+    }
+    
+    #confirm-title {
+        text-align: center;
+        text-style: bold;
+        color: orange;
+        margin-bottom: 1;
+    }
+    
+    #confirm-content {
+        text-align: center;
+        padding: 1;
+        margin-bottom: 1;
+    }
+    
+    #confirm-options {
+        height: auto;
+    }
+    """
+
+    BINDINGS = [
+        Binding("escape", "app.pop_screen", "Cancel")
+    ]
+
+    def __init__(self, message: str = "Are you sure?"):
+        super().__init__()
+        self.message = message
+
+    def compose(self) -> ComposeResult:
+        with Container(id="confirm-dialogue"):
+            yield Static("Reset Confirmation", id="confirm-title")
+            yield Static(self.message, id="confirm-content")
+            yield OptionList(
+                "No",
+                "Yes",
+                id="confirm-options"
+            )
+
+    def on_mount(self) -> None:
+        option_list = self.query_one("#confirm-options", OptionList)
+        option_list.highlighted = 0
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        option = str(event.option.prompt).strip()
+        self.dismiss(option == "Yes")
+
+class HostTunnel(ModalScreen):
+    CSS = """
+    HostTunnel {
+        align: center middle;
+    }
+
+    #host-title {
+        text-align: center;
+        text-style: bold;
+        color: orange;
+        margin: 1 0;
+    }
+    
+    #host-layout {
+        layout: horizontal;
+        height: 100%;
+        width: 100%;
+        border: solid orange;
+    }
+    
+    #host-list-container {
+        min-width: 40;
+        width: 3fr;
+        height: 100%;
+        border: solid green;
+        padding: 1;
+        margin-right: 1;
+    }
+
+    #host-list {
+        height: 100%;
+    }
+    
+    #host-actions-container {
+        min-width: 20;
+        width: 1fr;
+        height: 30%;
+        border: solid blue;
+        padding: 1;
+    }
+    
+    #host-actions-title {
+        text-align: center;
+        text-style: bold;
+        margin-bottom: 1;
+    }
+    
+    #host-actions {
+        height: 100%;
+    }
+    """
+
+    BINDINGS = [
+        Binding("escape", "app.pop_screen", "Back"),
+        Binding("tab", "switch_focus", "Switch Focus")
+    ]
+
+    def __init__(self):
+        super().__init__()
+        self.focused_list = "hosts"
+
+    def compose(self) -> ComposeResult:
+        yield Static("Host Settings", id="host-title")
+        with Container(id="host-layout"):
+            with Container(id="host-list-container"):
+                yield Static("Excluded Hosts", id="host-list-title")
+                yield OptionList(id="host-list")
+            with Container(id="host-actions-container"):
+                yield Static("Actions", id="host-actions-title")
+                yield OptionList(
+                    "Add",
+                    "Delete",
+                    "Reset",
+                    None,
+                    "Back",
+                    id="host-actions"
+                    )
+        yield Footer()
+
+    def on_mount(self) -> None:
+        self.refresh_host_list()
+        actions_list = self.query_one("#host-actions", OptionList)
+        actions_list.highlighted = 0
+        self.update_focus()
+
+    def refresh_host_list(self) -> None:
+        try:
+            host_list = self.query_one("#host-list", OptionList)
+            host_list.clear_options()
+
+            output, success = WarpCLI.list_tunnel_host()
+            if success:
+                lines = output.splitlines()
+                if lines:
+                    hosts = [line.split()[0].strip() for line in lines[1:] if line.strip()]
+                    if hosts:
+                        for host in hosts:
+                            host_list.add_option(host)
+                    else:
+                        host_list.add_options("(No hosts excluded)")
+                else:
+                    host_list.add_options("(No hosts excluded)")
+            else:
+                host_list.add_options("(No hosts excluded)")
+        except Exception as e:
+            host_list = self.query_one("#host-list", OptionList)
+            host_list.clear_options()
+            host_list.add_option(f"Error: {str(e)}")
+
+    def update_focus(self) -> None:
+        host_list = self.query_one("#host-list", OptionList)
+        actions_list = self.query_one("#host-actions", OptionList)
+
+        if self.focused_list == "hosts":
+            host_list.focus()
+            host_list.border_title = "Excluded Hosts"
+            actions_list.border_title = None
+        else:
+            actions_list.focus()
+            actions_list.border_title = "Actions"
+            host_list.border_title = None
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        option = str(event.option.prompt).strip()
+        if event.option_list.id == "host-actions":
+            if option == "Back":
+                self.app.pop_screen()
+            elif option == "Add":
+                self.app.push_screen(HostInput(), callback=self._on_host_added)
+            elif option == "Delete":
+                self._delete_current_host()
+            elif option == "Reset":
+                self.app.push_screen(
+                    ConfirmReset("Reset all excluded hosts?"),
+                    callback=self._on_reset_confirmed
+                )
+
+    def _delete_current_host(self) -> None:
+        host_list = self.query_one("#host-list", OptionList)
+        if host_list.highlighted is not None:
+            selected_option = host_list.get_option_at_index(host_list.highlighted)
+            if selected_option and selected_option.prompt:
+                host = str(selected_option.prompt).strip()
+                if host and host != "(No hosts excluded)" and not host.startswith("Error:"):
+                    success, error_msg = WarpCLI.remove_tunnel_host(host)
+                    self.refresh_host_list()
+
+    def _on_host_added(self, result=None) -> None:
+        self.refresh_host_list()
+
+    def _on_reset_confirmed(self, confirmed: bool) -> None:
+        if confirmed:
+            success, error_msg = WarpCLI.reset_tunnel_host()
+            self.refresh_host_list()
+
+    def action_switch_focus(self) -> None:
+        self.focused_list = "hosts" if self.focused_list == "actions" else "actions"
+        self.update_focus()
 
 class MasqueSelect(ModalScreen):
     CSS = """
@@ -835,3 +1094,5 @@ class TunnelSettings(ModalScreen):
             self.app.push_screen(ProtocolTunnel())
         elif option == "Masque Options":
             self.app.push_screen(MasqueTunnel())
+        elif option == "Host":
+            self.app.push_screen(HostTunnel())
