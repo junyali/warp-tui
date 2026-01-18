@@ -128,7 +128,7 @@ class HostTunnel(ModalScreen):
     }
     
     #host-list-container {
-        min-width: 40;
+        min-width: 20;
         width: 3fr;
         height: 100%;
         border: solid green;
@@ -206,11 +206,11 @@ class HostTunnel(ModalScreen):
                         for host in hosts:
                             host_list.add_option(host)
                     else:
-                        host_list.add_options("(No hosts excluded)")
+                        host_list.add_option("(No hosts excluded)")
                 else:
-                    host_list.add_options("(No hosts excluded)")
+                    host_list.add_option("(No hosts excluded)")
             else:
-                host_list.add_options("(No hosts excluded)")
+                host_list.add_option("(No hosts excluded)")
         except Exception as e:
             host_list = self.query_one("#host-list", OptionList)
             host_list.clear_options()
