@@ -6,6 +6,243 @@ from textual.app import ComposeResult
 
 from ...utils import WarpCLI
 
+class IPInput(ModalScreen):
+    CSS = """
+    IPInput {
+        align: center middle;
+    }
+    
+    #ip-dialogue {
+        height: auto;
+        border: solid orange;
+        padding: 1;
+        margin: 2 8;
+    }
+
+    #ip-input-title {
+        text-align: center;
+        text-style: bold;
+        color: orange;
+        margin-bottom: 1;
+    }
+
+    Input {
+        height: auto;
+    }
+    """
+
+    BINDINGS = [
+        Binding("escape", "app.pop_screen", "Cancel")
+    ]
+
+    def compose(self) -> ComposeResult:
+        with Container(id="ip-dialogue"):
+            yield Static("Enter IP Address or CIDR", id="ip-input-title")
+            yield Input(placeholder="192.168.1.0/24 or fe80::/10", id="ip-input")
+            yield Static("Press Enter to confirm, Escape to cancel")
+
+    def _is_valid_ip(self, ip: str) -> bool:
+        import re
+        ipv4_pattern = r'^(\d{1,3}\.){3}\d{1,3}(/\d{1,2})?$'
+        ipv6_pattern = r'^([0-9a-fA-F:]+)(/\d{1,3})?$'
+        if re.match(ipv4_pattern, ip):
+            parts = ip.split('/')[0].split('.')
+            if all(0 <= int(p) <= 255 for p in parts):
+                if '/' in ip:
+                    prefix = int(ip.split('/')[1])
+                    return 0 <= prefix <= 32
+                return True
+        if re.match(ipv6_pattern, ip):
+            if '/' in ip:
+                prefix = int(ip.split('/')[1])
+                return 0 <= prefix <= 128
+            return True
+        return False
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        ip = event.value.strip()
+        if not ip:
+            self.dismiss((False, "IP address cannot be empty"))
+            return
+        if not self._is_valid_ip(ip):
+            self.dismiss((False, "Invalid IP address or CIDR format"))
+            return
+        try:
+            success, error_msg = WarpCLI.add_tunnel_ip(ip)
+            self.dismiss((success, error_msg))
+        except Exception as e:
+            self.dismiss((False, f"Error: {str(e)}"))
+
+
+class IPTunnel(ModalScreen):
+    CSS = """
+    IPTunnel {
+        align: center middle;
+    }
+
+    #ip-title {
+        text-align: center;
+        text-style: bold;
+        color: orange;
+        margin: 1 0;
+    }
+
+    #ip-layout {
+        layout: horizontal;
+        height: 100%;
+        width: 100%;
+        border: solid orange;
+    }
+
+    #ip-list-container {
+        min-width: 20;
+        width: 3fr;
+        height: 100%;
+        border: solid green;
+        padding: 1;
+        margin-right: 1;
+    }
+
+    #ip-list {
+        height: 100%;
+    }
+
+    #ip-actions-container {
+        min-width: 20;
+        width: 1fr;
+        height: 30%;
+        border: solid blue;
+        padding: 1;
+    }
+
+    #ip-actions-title {
+        text-align: center;
+        text-style: bold;
+        margin-bottom: 1;
+    }
+
+    #ip-actions {
+        height: 100%;
+    }
+    """
+
+    BINDINGS = [
+        Binding("escape", "app.pop_screen", "Back"),
+        Binding("tab", "switch_focus", "Switch Focus")
+    ]
+
+    def __init__(self):
+        super().__init__()
+        self.focused_list = "ips"
+
+    def compose(self) -> ComposeResult:
+        yield Static("IP Settings", id="ip-title")
+        with Container(id="ip-layout"):
+            with Container(id="ip-list-container"):
+                yield Static("Excluded IPs", id="ip-list-title")
+                yield OptionList(id="ip-list")
+            with Container(id="ip-actions-container"):
+                yield Static("Actions", id="ip-actions-title")
+                yield OptionList(
+                    "Add",
+                    "Delete",
+                    "Reset",
+                    None,
+                    "Back",
+                    id="ip-actions"
+                )
+        yield Footer()
+
+    def on_mount(self) -> None:
+        self.refresh_ip_list()
+        actions_list = self.query_one("#ip-actions", OptionList)
+        actions_list.highlighted = 0
+        self.update_focus()
+
+    def refresh_ip_list(self) -> None:
+        try:
+            ip_list = self.query_one("#ip-list", OptionList)
+            ip_list.clear_options()
+
+            output, success = WarpCLI.list_tunnel_ip()
+            if success:
+                lines = output.splitlines()
+                if len(lines) > 1:
+                    ips = []
+                    for line in lines[1:]:
+                        parts = line.split()
+                        if parts:
+                            ips.append(parts[0].strip())
+                    if ips:
+                        for ip in ips:
+                            ip_list.add_option(ip)
+                    else:
+                        ip_list.add_option("(No IPs excluded)")
+                else:
+                    ip_list.add_option("(No IPs excluded)")
+            else:
+                ip_list.add_option("(No IPs excluded)")
+        except Exception as e:
+            ip_list = self.query_one("#ip-list", OptionList)
+            ip_list.clear_options()
+            ip_list.add_option(f"Error: {str(e)}")
+
+    def update_focus(self) -> None:
+        ip_list = self.query_one("#ip-list", OptionList)
+        actions_list = self.query_one("#ip-actions", OptionList)
+
+        if self.focused_list == "ips":
+            ip_list.focus()
+            ip_list.border_title = "Excluded IPs"
+            actions_list.border_title = None
+        else:
+            actions_list.focus()
+            actions_list.border_title = "Actions"
+            ip_list.border_title = None
+
+    def _is_placeholder(self, text: str) -> bool:
+        return text in ("(No IPs excluded)",) or text.startswith("Error:")
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        option = str(event.option.prompt).strip()
+        if event.option_list.id == "ip-list":
+            if self._is_placeholder(option):
+                return
+        elif event.option_list.id == "ip-actions":
+            if option == "Back":
+                self.app.pop_screen()
+            elif option == "Add":
+                self.app.push_screen(IPInput(), callback=self._on_ip_added)
+            elif option == "Delete":
+                self._delete_current_ip()
+            elif option == "Reset":
+                self.app.push_screen(
+                    ConfirmReset("Reset all excluded IPs?"),
+                    callback=self._on_reset_confirmed
+                )
+
+    def _delete_current_ip(self) -> None:
+        ip_list = self.query_one("#ip-list", OptionList)
+        if ip_list.highlighted is not None:
+            selected_option = ip_list.get_option_at_index(ip_list.highlighted)
+            if selected_option and selected_option.prompt:
+                ip = str(selected_option.prompt).strip()
+                if ip and not self._is_placeholder(ip):
+                    success, error_msg = WarpCLI.remove_tunnel_ip(ip)
+                    self.refresh_ip_list()
+
+    def _on_ip_added(self, result=None) -> None:
+        self.refresh_ip_list()
+
+    def _on_reset_confirmed(self, confirmed: bool) -> None:
+        if confirmed:
+            success, error_msg = WarpCLI.reset_tunnel_ip()
+            self.refresh_ip_list()
+
+    def action_switch_focus(self) -> None:
+        self.focused_list = "ips" if self.focused_list == "actions" else "actions"
+        self.update_focus()
+
 class HostInput(ModalScreen):
     CSS = """
     HostInput {
@@ -1120,3 +1357,5 @@ class TunnelSettings(ModalScreen):
             self.app.push_screen(MasqueTunnel())
         elif option == "Host":
             self.app.push_screen(HostTunnel())
+        elif option == "IP":
+            self.app.push_screen(IPTunnel())
